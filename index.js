@@ -119,13 +119,19 @@ function startGame() {
   const game = Field.generateField(5, 5, 0.2);
   game.print();
 
-  if (process.stdin.isTTY) {
-    
-    readline.emitKeypressEvents(process.stdin);
-    process.stdin.setRawMode(true);
+  readline.emitKeypressEvents(process.stdin);
 
+  let rawModeActive = false;
+  try {
+    process.stdin.setRawMode(true);
+    rawModeActive = true;
+  } catch (e) {
+    rawModeActive = false;
+  }
+
+  if (rawModeActive) {
     process.stdin.on('keypress', function handler(str, key) {
-      if (game.gameOver) return;
+      if (!key || game.gameOver) return;
 
       if (key.name === 'q' || (key.ctrl && key.name === 'c')) {
         process.stdin.setRawMode(false);
@@ -154,7 +160,6 @@ function startGame() {
 
     process.stdin.resume();
   } else {
-   
     console.log('  (กดตัวอักษร แล้วกด Enter)');
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
