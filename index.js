@@ -7,10 +7,10 @@ const PATH   = '░';
 const PLAYER = '*';
 
 const DISPLAY = {
-  [PLAYER]: '😍',
-  [HAT]:    '🎩',
-  [HOLE]:   '❌',
-  [PATH]:   '🌿',
+  [PLAYER]: ' @ ',
+  [HAT]:    ' ^ ',
+  [HOLE]:   ' X ',
+  [PATH]:   ' . ',
 };
 
 class Field {
@@ -102,52 +102,86 @@ class Field {
 }
 
 // ── Game loop ──────────────────────────────────────────
+function handleGameOver(cleanup) {
+  cleanup();
+  setTimeout(() => {
+    const again = prompt('\nเล่นอีกรอบมั้ย? (y/n): ');
+    if (again && again.trim().toLowerCase() === 'y') {
+      startGame();
+    } else {
+      console.log('Bye! 👋');
+      process.exit();
+    }
+  }, 100);
+}
+
 function startGame() {
   const game = Field.generateField(5, 5, 0.2);
   game.print();
 
-  // raw mode → keypress ทันทีไม่ต้องกด Enter
-  readline.emitKeypressEvents(process.stdin);
-  if (process.stdin.isTTY) process.stdin.setRawMode(true);
+  if (process.stdin.isTTY) {
+    // raw mode → keypress ทันทีไม่ต้องกด Enter
+    readline.emitKeypressEvents(process.stdin);
+    process.stdin.setRawMode(true);
 
-  process.stdin.on('keypress', function handler(str, key) {
-    if (game.gameOver) return;
+    process.stdin.on('keypress', function handler(str, key) {
+      if (game.gameOver) return;
 
-    if (key.name === 'q' || (key.ctrl && key.name === 'c')) {
-      process.stdin.setRawMode(false);
-      process.stdin.removeListener('keypress', handler);
-      process.stdin.pause();
-      console.log('\nBye! 👋');
-      process.exit();
-    }
+      if (key.name === 'q' || (key.ctrl && key.name === 'c')) {
+        process.stdin.setRawMode(false);
+        process.stdin.removeListener('keypress', handler);
+        process.stdin.pause();
+        console.log('\nBye! 👋');
+        process.exit();
+      }
 
-    if      (key.name === 'w' || key.name === 'up')    game.moveUp();
-    else if (key.name === 's' || key.name === 'down')  game.moveDown();
-    else if (key.name === 'a' || key.name === 'left')  game.moveLeft();
-    else if (key.name === 'd' || key.name === 'right') game.moveRight();
-    else return;
+      if      (key.name === 'w' || key.name === 'up')    game.moveUp();
+      else if (key.name === 's' || key.name === 'down')  game.moveDown();
+      else if (key.name === 'a' || key.name === 'left')  game.moveLeft();
+      else if (key.name === 'd' || key.name === 'right') game.moveRight();
+      else return;
 
-    if (!game.gameOver) game.print();
+      if (!game.gameOver) game.print();
 
-    if (game.gameOver) {
-      // ปิด raw mode ก่อน แล้วค่อยใช้ prompt-sync ถาม play again
-      process.stdin.setRawMode(false);
-      process.stdin.removeListener('keypress', handler);
-      process.stdin.pause();
+      if (game.gameOver) {
+        handleGameOver(() => {
+          process.stdin.setRawMode(false);
+          process.stdin.removeListener('keypress', handler);
+          process.stdin.pause();
+        });
+      }
+    });
 
-      setTimeout(() => {
-        const again = prompt('\nเล่นอีกรอบมั้ย? (y/n): ');
-        if (again && again.trim().toLowerCase() === 'y') {
-          startGame();
-        } else {
-          console.log('Bye! 👋');
-          process.exit();
-        }
-      }, 100);
-    }
-  });
+    process.stdin.resume();
+  } else {
+    // fallback: line mode → กด w/a/s/d แล้ว Enter
+    console.log('  (กดตัวอักษร แล้วกด Enter)');
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
-  process.stdin.resume();
+    rl.on('line', function handler(line) {
+      if (game.gameOver) return;
+
+      const key = line.trim().toLowerCase();
+
+      if (key === 'q') {
+        rl.close();
+        console.log('\nBye! 👋');
+        process.exit();
+      }
+
+      if      (key === 'w') game.moveUp();
+      else if (key === 's') game.moveDown();
+      else if (key === 'a') game.moveLeft();
+      else if (key === 'd') game.moveRight();
+      else return;
+
+      if (!game.gameOver) game.print();
+
+      if (game.gameOver) {
+        handleGameOver(() => rl.close());
+      }
+    });
+  }
 }
 
 startGame();
