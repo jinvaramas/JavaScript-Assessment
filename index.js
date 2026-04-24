@@ -101,7 +101,7 @@ class Field {
   get gameOver() { return this._gameOver; }
 }
 
-// ── Game loop ──────────────────────────────────────────
+
 function handleGameOver(cleanup) {
   cleanup();
   setTimeout(() => {
@@ -120,7 +120,7 @@ function startGame() {
   game.print();
 
   if (process.stdin.isTTY) {
-    // raw mode → keypress ทันทีไม่ต้องกด Enter
+    
     readline.emitKeypressEvents(process.stdin);
     process.stdin.setRawMode(true);
 
@@ -154,7 +154,7 @@ function startGame() {
 
     process.stdin.resume();
   } else {
-    // fallback: line mode → กด w/a/s/d แล้ว Enter
+   
     console.log('  (กดตัวอักษร แล้วกด Enter)');
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
